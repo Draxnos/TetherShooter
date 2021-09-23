@@ -84,10 +84,9 @@ public class PlayerBehaviour : MonoBehaviour
     /// Calls GroundCheck, inserting its contact points
     /// </summary>
     /// <param name="collision"></param>
-    private void OnCollisionEnter(Collision collision)
+    private void OnCollisionStay(Collision collision)
     {
         GroundCheck(collision.contacts);
-
     }
 
     /// <summary>
@@ -96,6 +95,7 @@ public class PlayerBehaviour : MonoBehaviour
     /// <param name="collision"></param>
     private void OnCollisionExit(Collision collision)
     {
+
         grounded = false;
         wallHop = false;
     }
@@ -167,14 +167,7 @@ public class PlayerBehaviour : MonoBehaviour
             finalMove = Vector3.ProjectOnPlane(moveDir, groundNormal);
         }
 
-        if (rb.velocity.magnitude < speedCap)
-        {
-            rb.AddForce(finalMove.normalized * speedForce, ForceMode.Impulse);
-        }
-        else
-        {
-            rb.velocity = finalMove.normalized * speedCap;
-        }
+        rb.velocity = finalMove.normalized * speedCap;
     }
 
     /// <summary>
@@ -223,7 +216,7 @@ public class PlayerBehaviour : MonoBehaviour
                     }
                 }
 
-                rb.AddForce(correction * hopDir.normalized * jumpForce * 1.5f, ForceMode.VelocityChange);
+                rb.AddForce(correction * hopDir.normalized * jumpForce * 1.5f, ForceMode.Impulse);
             }
         }
     }

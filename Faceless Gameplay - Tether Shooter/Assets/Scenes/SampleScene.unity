@@ -432,8 +432,7 @@ MonoBehaviour:
   connected: 0
   cj: {fileID: 131368918}
   length: 0
-  reelSpeed: 1500
-  reelForce: 0
+  reelSpeed: 35
   rb: {fileID: 0}
 --- !u!54 &131368916
 Rigidbody:
@@ -470,14 +469,15 @@ MonoBehaviour:
   normal: {fileID: 13400000, guid: 6cb9ba938c71da149bac1ddd1488d18f, type: 2}
   slip: {fileID: 13400000, guid: 18d1737311d57d94eb0ce57467b268ba, type: 2}
   groundNormal: {x: 0, y: 0, z: 0}
+  oldNormal: {x: 0, y: 0, z: 0}
   groundPoint: {x: 0, y: 0, z: 0}
   curveCenterBottom: {x: 0, y: 0, z: 0}
+  savedVelocity: {x: 0, y: 0, z: 0}
   speedForce: 900
   walkSpeed: 6
   sprintSpeed: 12
   crouchSpeed: 4
   speedCap: 6
-  touchingWall: 0
   finalMove: {x: 0, y: 0, z: 0}
   jumpForce: 5
   jumped: 0

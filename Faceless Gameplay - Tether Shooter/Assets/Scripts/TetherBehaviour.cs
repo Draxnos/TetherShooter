@@ -28,7 +28,6 @@ public class TetherBehaviour : MonoBehaviour
     public ConfigurableJoint cj;
     public float length;
     public float reelSpeed;
-    public float reelForce;
     public Rigidbody rb;
 
     /*private LineRenderer lr;
@@ -58,16 +57,23 @@ public class TetherBehaviour : MonoBehaviour
             {
                 CutTether();
             }
+        }
+    }
 
-            if (Input.GetKey(reel))
-            {
-                TetherReel();
-            }
+    void FixedUpdate()
+    {
+        if(Input.GetKeyUp(reel) || Input.GetKeyUp(unreel))
+        {
+            reelTimer = 0;
+        }
 
-            if (Input.GetKey(unreel))
-            {
-                TetherUnreel();
-            }
+        if (Input.GetKey(reel))
+        {
+            TetherReel();
+        }
+        else if (Input.GetKey(unreel))
+        {
+            TetherUnreel();
         }
     }
 
@@ -97,17 +103,25 @@ public class TetherBehaviour : MonoBehaviour
         }
     }
 
+    public float reelTimer = 0;
+
     /// <summary>
     /// Decreases the linear limit, reeling in
     /// </summary>
     void TetherReel()
     {
-        if(cj.linearLimit.limit >= 1)
+        if (reelTimer < 1)
         {
-            if(rb.velocity.magnitude < 80)
-            {
-                rb.AddForce((cj.connectedAnchor - transform.position).normalized * reelSpeed * Time.deltaTime);
-            }
+            reelTimer += Time.fixedDeltaTime;
+        }
+        else
+        {
+            reelTimer = 1;
+        }
+
+        if (cj.linearLimit.limit >= 1)
+        {
+            rb.velocity = (cj.connectedAnchor - transform.position).normalized * reelSpeed * reelTimer;
 
             SoftJointLimit distance = cj.linearLimit;
             distance.limit = Vector3.Distance(transform.position, cj.connectedAnchor);
@@ -121,8 +135,7 @@ public class TetherBehaviour : MonoBehaviour
     void TetherUnreel()
     {
         SoftJointLimit distance = cj.linearLimit;
-        float dist = Vector3.Distance(cj.connectedAnchor, gameObject.transform.position);
-        distance.limit += reelSpeed * Time.deltaTime;
+        distance.limit += reelSpeed * Time.fixedDeltaTime;
         cj.linearLimit = distance;
     }
 
