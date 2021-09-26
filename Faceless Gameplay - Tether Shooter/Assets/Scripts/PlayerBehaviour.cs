@@ -16,8 +16,7 @@ public class PlayerBehaviour : MonoBehaviour
     public Vector3 oldNormal;
     public Vector3 groundPoint;
     public Vector3 curveCenterBottom;
-    public Vector3 savedVelocity;
-    public float speedForce = 100f;
+    public Vector3 moveDir;
     public float walkSpeed = 10f;
     public float sprintSpeed = 20f;
     public float crouchSpeed = 5f;
@@ -49,6 +48,7 @@ public class PlayerBehaviour : MonoBehaviour
 
     void Update()
     {
+        moveDir = (transform.right * Input.GetAxisRaw("Horizontal") + transform.forward * Input.GetAxisRaw("Vertical")).normalized;
         CameraMovement();
         Crouch();
         Jump();
@@ -69,7 +69,7 @@ public class PlayerBehaviour : MonoBehaviour
         {
             coll.material = normal;
 
-            if(Input.GetAxisRaw("Horizontal") != 0 || Input.GetAxisRaw("Vertical") != 0)
+            if(moveDir != Vector3.zero)
             {
                 Movement();
             }
@@ -150,7 +150,6 @@ public class PlayerBehaviour : MonoBehaviour
             speedCap = walkSpeed;
         }
 
-        Vector3 moveDir = (transform.right * Input.GetAxisRaw("Horizontal") + transform.forward * Input.GetAxisRaw("Vertical")).normalized;
         Vector3 targDir = Vector3.ProjectOnPlane(moveDir * 0.1f, groundNormal) - groundNormal * coll.radius * 1.2f;
 
         Ray ray = new Ray(curveCenterBottom, targDir);
