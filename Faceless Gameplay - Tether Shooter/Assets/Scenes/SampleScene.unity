@@ -434,6 +434,7 @@ MonoBehaviour:
   length: 0
   reelSpeed: 35
   rb: {fileID: 0}
+  reelTimer: 0
 --- !u!54 &131368916
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -472,8 +473,7 @@ MonoBehaviour:
   oldNormal: {x: 0, y: 0, z: 0}
   groundPoint: {x: 0, y: 0, z: 0}
   curveCenterBottom: {x: 0, y: 0, z: 0}
-  savedVelocity: {x: 0, y: 0, z: 0}
-  speedForce: 900
+  moveDir: {x: 0, y: 0, z: 0}
   walkSpeed: 6
   sprintSpeed: 12
   crouchSpeed: 4
@@ -865,13 +865,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 328382561}
-  m_LocalRotation: {x: -0.42261827, y: -0, z: -0, w: 0.9063079}
+  m_LocalRotation: {x: -0.30070576, y: 0, z: 0, w: 0.953717}
   m_LocalPosition: {x: -46.1, y: 0, z: 26.75}
   m_LocalScale: {x: 56.23, y: 24.3, z: 41.87}
   m_Children: []
   m_Father: {fileID: 1124863786}
   m_RootOrder: 18
-  m_LocalEulerAnglesHint: {x: -50, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -35, y: 0, z: 0}
 --- !u!1 &442524772
 GameObject:
   m_ObjectHideFlags: 0
@@ -993,13 +993,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 514120171}
-  m_LocalRotation: {x: -0.29883623, y: -0.64085644, z: -0.29883623, w: 0.64085644}
-  m_LocalPosition: {x: -69.4, y: 0, z: 3.65}
+  m_LocalRotation: {x: -0.21263108, y: -0.67437977, z: -0.21263108, w: 0.67437977}
+  m_LocalPosition: {x: -64.032, y: -4.06, z: 3.02}
   m_LocalScale: {x: 56.23, y: 24.3, z: 41.87}
   m_Children: []
   m_Father: {fileID: 1124863786}
   m_RootOrder: 20
-  m_LocalEulerAnglesHint: {x: -50, y: -90, z: 0}
+  m_LocalEulerAnglesHint: {x: -35, y: -90, z: 0}
 --- !u!65 &514120173
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1184,7 +1184,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 623822504}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -46.1, y: 11.23, z: 52.04}
+  m_LocalPosition: {x: -46.1, y: 9.8, z: 57.865}
   m_LocalScale: {x: 56.23, y: 24.3, z: 41.87}
   m_Children: []
   m_Father: {fileID: 1124863786}

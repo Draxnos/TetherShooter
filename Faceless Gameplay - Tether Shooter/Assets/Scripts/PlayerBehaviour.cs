@@ -11,22 +11,25 @@ public class PlayerBehaviour : MonoBehaviour
     public bool grounded = false;
     public PhysicMaterial normal;
     public PhysicMaterial slip;
-
+    public ContactPoint[] contacts;
+    public List<Vector3> groundNormals;
     public Vector3 groundNormal;
     public Vector3 oldNormal;
-    public Vector3 groundPoint;
     public Vector3 curveCenterBottom;
+
     public Vector3 moveDir;
     public float walkSpeed = 10f;
     public float sprintSpeed = 20f;
     public float crouchSpeed = 5f;
     public float speedCap = 10f;
+
     public Vector3 finalMove;
 
     public float jumpForce = 200f;
     public bool jumped = false;
     public bool wallHop;
     public bool wallHopped = false;
+    public List<Vector3> wallNormals;
     public Vector3 wallNormal;
     public Vector3 perpRight;
     public Vector3 perpLeft;
@@ -86,18 +89,9 @@ public class PlayerBehaviour : MonoBehaviour
     /// <param name="collision"></param>
     private void OnCollisionStay(Collision collision)
     {
-        GroundCheck(collision.contacts);
-    }
-
-    /// <summary>
-    /// Un-grounds and disables wall hop (in the case either is enabled
-    /// </summary>
-    /// <param name="collision"></param>
-    private void OnCollisionExit(Collision collision)
-    {
-
-        grounded = false;
-        wallHop = false;
+        contacts = new ContactPoint[collision.contactCount];
+        collision.GetContacts(contacts);
+        GroundCheck(contacts);
     }
 
     /// <summary>
@@ -150,21 +144,14 @@ public class PlayerBehaviour : MonoBehaviour
             speedCap = walkSpeed;
         }
 
-        Vector3 targDir = Vector3.ProjectOnPlane(moveDir * 0.1f, groundNormal) - groundNormal * coll.radius * 1.2f;
+        /*Vector3 targDir = Vector3.ProjectOnPlane(moveDir * 0.1f, groundNormal) - groundNormal * coll.radius * 1.2f;
 
         Ray ray = new Ray(curveCenterBottom, targDir);
         RaycastHit hit;
         float dist = targDir.magnitude;
-        Debug.DrawRay(curveCenterBottom, targDir, Color.red, coll.radius * 1.1f);
+        Debug.DrawRay(curveCenterBottom, targDir, Color.red, coll.radius * 1.1f);*/
 
-        if (Physics.Raycast(ray, out hit, dist))
-        {
-            finalMove = hit.point - groundPoint;
-        }
-        else
-        {
-            finalMove = Vector3.ProjectOnPlane(moveDir, groundNormal);
-        }
+        finalMove = Vector3.ProjectOnPlane(moveDir, groundNormal);
 
         rb.velocity = finalMove.normalized * speedCap;
     }
@@ -181,7 +168,6 @@ public class PlayerBehaviour : MonoBehaviour
             if (grounded == true)
             {
                 rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-                grounded = false;
                 jumped = true;
             }
             else if (wallHop == true)
@@ -217,6 +203,10 @@ public class PlayerBehaviour : MonoBehaviour
 
                 rb.AddForce(correction * hopDir.normalized * jumpForce * 1.5f, ForceMode.Impulse);
             }
+            else if (tb.connected && tb.length == (tb.cj.connectedAnchor - transform.position).magnitude)
+            {
+                rb.AddForce((tb.cj.connectedAnchor - transform.position).normalized * jumpForce, ForceMode.Impulse);
+            }
         }
     }
 
@@ -225,43 +215,72 @@ public class PlayerBehaviour : MonoBehaviour
     /// <summary>
     /// Script used to find a grounding or wall hop-off point
     /// </summary>
-    /// <param name="contacts">
+    /// <param name="contacts_">
     /// Contacts gathered when OnCollisionEnter is called
     /// </param>
-    void GroundCheck(ContactPoint[] contacts)
+    void GroundCheck(ContactPoint[] contacts_)
     {
+        if (grounded == true)
+        {
+            oldNormal = groundNormal;
+        }
+        else
+        {
+            oldNormal = Vector3.zero;
+        }
+
+        groundNormal = Vector3.zero;
+
+        wallHop = false;
+        jumped = true;
+
         curveCenterBottom = coll.bounds.center - Vector3.up * (coll.bounds.extents.y - coll.radius);
         Vector3 curveCenterTop = coll.bounds.center + Vector3.up * (coll.bounds.extents.y - coll.radius);
-        float slopeCorrectionLength;
 
-        foreach (ContactPoint c in contacts)
+        foreach (ContactPoint c in contacts_)
         {
             Vector3 dir = curveCenterBottom - c.point;
             Vector3 dir2 = c.point - curveCenterTop;
-            slopeCorrectionLength = dir.magnitude;
+            Debug.DrawRay(curveCenterBottom, -dir, Color.red, 15f);
 
-            if (dir.y > 0f && Mathf.Abs(Vector3.Angle(c.normal, Vector3.up)) <= 50)
+            if (dir.y > 0f && Mathf.Abs(Vector3.Angle(c.normal, Vector3.up)) <= 40)
             {
-                if(groundNormal != null)
+                if (groundNormal == Vector3.zero)
                 {
-                    oldNormal = groundNormal;
+                    groundNormal = c.normal;
                 }
-                
-                groundNormal = c.normal;
-                groundPoint = c.point;
+                else
+                {
+                    groundNormal += c.normal;
+                    groundNormal /= 2;
+                }
 
                 grounded = true;
-                wallHop = false;
                 jumped = false;
             }
-            else if (dir2.y < 0f && grounded == false)
+            else if (dir2.y < 0f)
             {
-                wallHop = true;
+                wallNormal = c.point;
 
-                wallNormal = c.normal.normalized;
                 perpLeft = Vector3.Cross(wallNormal, Vector3.up);
                 perpRight = Vector3.Cross(Vector3.up, wallNormal);
+
+                wallHop = true;
             }
+        }
+
+        if (grounded && groundNormal != oldNormal)
+        {
+            groundNormal += oldNormal;
+            groundNormal /= 2;
+        }
+    }
+
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.contactCount == 0)
+        {
+            grounded = false;
         }
     }
 }
