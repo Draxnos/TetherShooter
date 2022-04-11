@@ -4,32 +4,50 @@ using UnityEngine;
 
 public class PlayerBehaviour : MonoBehaviour
 {
+    /// <summary>
+    /// The basics
+    /// </summary>
     public Camera cam;
     public Rigidbody rb;
     public CapsuleCollider coll;
 
+    public Vector3 standOffset = new Vector3(0f, 0.5369999f, 0f);
+    public Vector3 crouchOffset = Vector3.zero;
+    public Vector3 camOffset;
+
+    /// <summary>
+    /// Grounding Shit
+    /// </summary>
     public bool grounded = false;
     public PhysicMaterial normal;
     public PhysicMaterial slip;
     public ContactPoint[] contacts;
-    public List<Vector3> groundNormals;
+    public Vector3 groundNormals;
+    public Vector3 hits;
     public Vector3 groundNormal;
-    public Vector3 oldNormal;
+    public Vector3 point;
     public Vector3 curveCenterBottom;
+    public Vector3 curveCenterTop;
 
+    /// <summary>
+    /// Movement Shit
+    /// </summary>
     public Vector3 moveDir;
+    public float moveForce;
     public float walkSpeed = 10f;
     public float sprintSpeed = 20f;
     public float crouchSpeed = 5f;
     public float speedCap = 10f;
 
     public Vector3 finalMove;
-
+    
+    /// <summary>
+    /// Jump shit
+    /// </summary>
     public float jumpForce = 200f;
     public bool jumped = false;
     public bool wallHop;
     public bool wallHopped = false;
-    public List<Vector3> wallNormals;
     public Vector3 wallNormal;
     public Vector3 perpRight;
     public Vector3 perpLeft;
@@ -38,17 +56,26 @@ public class PlayerBehaviour : MonoBehaviour
 
     public TetherBehaviour tb;
 
+    /// <summary>
+    /// Personal Settings
+    /// </summary>
     public KeyCode jump = KeyCode.Space;
     public KeyCode sprint = KeyCode.LeftControl;
     public KeyCode crouch = KeyCode.LeftShift;
     public float sensitivity = 200f;
 
+    /// <summary>
+    /// Runs once, at start
+    /// </summary>
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
         tb = gameObject.GetComponent<TetherBehaviour>();
     }
 
+    /// <summary>
+    /// Frames
+    /// </summary>
     void Update()
     {
         moveDir = (transform.right * Input.GetAxisRaw("Horizontal") + transform.forward * Input.GetAxisRaw("Vertical")).normalized;
@@ -56,16 +83,15 @@ public class PlayerBehaviour : MonoBehaviour
         Crouch();
         Jump();
 
-        if (Input.GetKey(KeyCode.Escape))
-        {
-            Application.Quit();
-        }
-        else if (Input.GetKey(KeyCode.R))
+        if (Input.GetKey(KeyCode.R))
         {
             UnityEngine.SceneManagement.SceneManager.LoadScene(0);
         }
     }
 
+    /// <summary>
+    /// Update, but for physics reliant items
+    /// </summary>
     void FixedUpdate()
     {
         if (grounded == true)
@@ -87,12 +113,28 @@ public class PlayerBehaviour : MonoBehaviour
     /// Calls GroundCheck, inserting its contact points
     /// </summary>
     /// <param name="collision"></param>
-    private void OnCollisionStay(Collision collision)
+    private void OnCollisionEnter(Collision collision)
     {
         contacts = new ContactPoint[collision.contactCount];
         collision.GetContacts(contacts);
         GroundCheck(contacts);
     }
+
+    /// <summary>
+    /// Use in case groundcheck failure
+    /// </summary>
+    /// <param name="collision"></param>
+    private void OnCollisionStay(Collision collision)
+    {
+        if (grounded == false)
+        {
+            contacts = new ContactPoint[collision.contactCount];
+            collision.GetContacts(contacts);
+            GroundCheck(contacts);
+        }
+    }
+
+    float xRotation;
 
     /// <summary>
     /// Controls the camera
@@ -109,19 +151,21 @@ public class PlayerBehaviour : MonoBehaviour
     /// </summary>
     void Crouch()
     {
-        if (Input.GetKeyDown(crouch))
+        //Crouch
+        if (Input.GetKeyDown(crouch) && crouched == false)
         {
             coll.height /= 1.5f;
             coll.center = new Vector3(0, -0.25f, 0);
-            cam.transform.localPosition = new Vector3(0, 0, 0);
+            camOffset = crouchOffset;
             crouched = true;
         }
 
-        if (Input.GetKeyUp(crouch))
+        //Uncrouch
+        if (Input.GetKeyUp(crouch) && crouched == true)
         {
             coll.height *= 1.5f;
             coll.center = new Vector3(0, 0, 0);
-            cam.transform.localPosition = new Vector3(0, 0.5369999f, 0);
+            camOffset = standOffset;
             crouched = false;
         }
     }
@@ -131,6 +175,7 @@ public class PlayerBehaviour : MonoBehaviour
     /// </summary>
     void Movement()
     {
+        //Set speed
         if (crouched == true)
         {
             speedCap = crouchSpeed;
@@ -144,16 +189,13 @@ public class PlayerBehaviour : MonoBehaviour
             speedCap = walkSpeed;
         }
 
-        /*Vector3 targDir = Vector3.ProjectOnPlane(moveDir * 0.1f, groundNormal) - groundNormal * coll.radius * 1.2f;
+        //Apply speed
+        if (rb.velocity.magnitude < speedCap)
+        {
+            finalMove = Vector3.ProjectOnPlane(moveDir, groundNormal);
 
-        Ray ray = new Ray(curveCenterBottom, targDir);
-        RaycastHit hit;
-        float dist = targDir.magnitude;
-        Debug.DrawRay(curveCenterBottom, targDir, Color.red, coll.radius * 1.1f);*/
-
-        finalMove = Vector3.ProjectOnPlane(moveDir, groundNormal);
-
-        rb.velocity = finalMove.normalized * speedCap;
+            rb.AddForce(finalMove * moveForce, ForceMode.Impulse);
+        }
     }
 
     /// <summary>
@@ -165,11 +207,12 @@ public class PlayerBehaviour : MonoBehaviour
     {
         if (Input.GetKeyDown(jump))
         {
+            //Regular jump
             if (grounded == true)
             {
                 rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-                jumped = true;
             }
+            //Wallhop
             else if (wallHop == true)
             {
                 Quaternion correction = Quaternion.identity;
@@ -185,6 +228,7 @@ public class PlayerBehaviour : MonoBehaviour
 
                 Vector3 hopDir = Quaternion.AngleAxis(45, -transform.right) * transform.forward;
 
+                //Angle depth correction
                 if (angleLeft + angleRight > angleSize)
                 {
                     if (angleTLeft < 20)
@@ -203,14 +247,13 @@ public class PlayerBehaviour : MonoBehaviour
 
                 rb.AddForce(correction * hopDir.normalized * jumpForce * 1.5f, ForceMode.Impulse);
             }
-            else if (tb.connected && tb.length == (tb.cj.connectedAnchor - transform.position).magnitude)
+            //Tether hop
+            else if (tb.tetherJump == true)
             {
                 rb.AddForce((tb.cj.connectedAnchor - transform.position).normalized * jumpForce, ForceMode.Impulse);
             }
         }
     }
-
-    float xRotation;
 
     /// <summary>
     /// Script used to find a grounding or wall hop-off point
@@ -220,47 +263,31 @@ public class PlayerBehaviour : MonoBehaviour
     /// </param>
     void GroundCheck(ContactPoint[] contacts_)
     {
-        if (grounded == true)
-        {
-            oldNormal = groundNormal;
-        }
-        else
-        {
-            oldNormal = Vector3.zero;
-        }
-
+        point = Vector3.zero;
         groundNormal = Vector3.zero;
-
         wallHop = false;
         jumped = true;
 
         curveCenterBottom = coll.bounds.center - Vector3.up * (coll.bounds.extents.y - coll.radius);
-        Vector3 curveCenterTop = coll.bounds.center + Vector3.up * (coll.bounds.extents.y - coll.radius);
+        curveCenterTop = coll.bounds.center + Vector3.up * (coll.bounds.extents.y - coll.radius);
 
         foreach (ContactPoint c in contacts_)
         {
             Vector3 dir = curveCenterBottom - c.point;
             Vector3 dir2 = c.point - curveCenterTop;
-            Debug.DrawRay(curveCenterBottom, -dir, Color.red, 15f);
 
+            //Ground detect
             if (dir.y > 0f && Mathf.Abs(Vector3.Angle(c.normal, Vector3.up)) <= 40)
             {
-                if (groundNormal == Vector3.zero)
-                {
-                    groundNormal = c.normal;
-                }
-                else
-                {
-                    groundNormal += c.normal;
-                    groundNormal /= 2;
-                }
+                groundNormal = c.normal;
 
                 grounded = true;
                 jumped = false;
             }
+            //Wall check
             else if (dir2.y < 0f)
             {
-                wallNormal = c.point;
+                wallNormal = c.normal;
 
                 perpLeft = Vector3.Cross(wallNormal, Vector3.up);
                 perpRight = Vector3.Cross(Vector3.up, wallNormal);
@@ -268,19 +295,26 @@ public class PlayerBehaviour : MonoBehaviour
                 wallHop = true;
             }
         }
-
-        if (grounded && groundNormal != oldNormal)
-        {
-            groundNormal += oldNormal;
-            groundNormal /= 2;
-        }
     }
 
+    /// <summary>
+    /// Use in case ground detection failure
+    /// </summary>
+    /// <param name="collision"></param>
     private void OnCollisionExit(Collision collision)
     {
+        //Truely ungrounded
         if (collision.contactCount == 0)
         {
             grounded = false;
+            wallHop = false;
+        }
+        //Double check
+        else
+        {
+            contacts = new ContactPoint[collision.contactCount];
+            collision.GetContacts(contacts);
+            GroundCheck(contacts);
         }
     }
 }

@@ -5,17 +5,6 @@ using UnityEngine;
 /// <summary>
 /// To be used
 /// </summary>
-public struct TetherSegment
-{
-    public Vector3 curPos;
-    public Vector3 oldPos;
-
-    public TetherSegment(Vector3 pos)
-    {
-        curPos = pos;
-        oldPos = pos;
-    }
-}
 
 public class TetherBehaviour : MonoBehaviour
 {
@@ -26,22 +15,19 @@ public class TetherBehaviour : MonoBehaviour
     public bool connected = false;
 
     public ConfigurableJoint cj;
-    public float length;
-    public float reelSpeed;
     public Rigidbody rb;
-
-    /*private LineRenderer lr;
-    private List<TetherSegment> tetherSegments = new List<TetherSegment>();
-    private float segmentLength;
-    private int segments;
-    private Vector3 startPoint;
-    private Vector3 endPoint;*/
+    public float maxLength;
+    public float reelSpeed;
+    public bool tetherJump = false;
 
     void Start()
     {
         rb = gameObject.GetComponent<Rigidbody>();
     }
 
+    /// <summary>
+    /// Runs once per frame
+    /// </summary>
     void Update()
     {
         if(connected == false)
@@ -60,25 +46,40 @@ public class TetherBehaviour : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Runs physics reliant code
+    /// </summary>
     void FixedUpdate()
     {
-        if(Input.GetKeyUp(reel) || Input.GetKeyUp(unreel))
+        if (connected == true)
         {
-            reelTimer = 0;
-        }
+            if (Input.GetKeyUp(reel) || Input.GetKeyUp(unreel))
+            {
+                reelTimer = 0.5f;
+            }
 
-        if (Input.GetKey(reel))
-        {
-            TetherReel();
-        }
-        else if (Input.GetKey(unreel))
-        {
-            TetherUnreel();
+            if (Input.GetKey(reel))
+            {
+                TetherReel();
+            }
+            else if (Input.GetKey(unreel) && cj.linearLimit.limit < maxLength)
+            {
+                TetherUnreel();
+            }
+
+            if ((transform.position - cj.connectedAnchor).magnitude >= cj.linearLimit.limit)
+            {
+                tetherJump = true;
+            }
+            else
+            {
+                tetherJump = false;
+            }
         }
     }
 
     /// <summary>
-    /// 
+    /// Creates a tether if the player is looking at a valid point
     /// </summary>
     void SendTether()
     {
@@ -88,12 +89,12 @@ public class TetherBehaviour : MonoBehaviour
         {
             float dist = Vector3.Distance(hit.point, gameObject.transform.position);
 
-            if (Vector3.Distance(hit.point, gameObject.transform.position) < 100)
+            if (Vector3.Distance(hit.point, gameObject.transform.position) < maxLength)
             {
-                cj.connectedAnchor = hit.point;
                 cj.xMotion = ConfigurableJointMotion.Limited;
                 cj.yMotion = ConfigurableJointMotion.Limited;
                 cj.zMotion = ConfigurableJointMotion.Limited;
+
                 cj.connectedAnchor = hit.point;
                 SoftJointLimit ll = cj.linearLimit;
                 ll.limit = dist;
@@ -103,16 +104,16 @@ public class TetherBehaviour : MonoBehaviour
         }
     }
 
-    public float reelTimer = 0;
+    public float reelTimer = 0.5f;
 
     /// <summary>
-    /// Decreases the linear limit, reeling in
+    /// Decreases tether length
     /// </summary>
     void TetherReel()
     {
         if (reelTimer < 1)
         {
-            reelTimer += Time.fixedDeltaTime;
+            reelTimer += Time.fixedDeltaTime / 2;
         }
         else
         {
@@ -121,7 +122,7 @@ public class TetherBehaviour : MonoBehaviour
 
         if (cj.linearLimit.limit >= 1)
         {
-            rb.velocity = (cj.connectedAnchor - transform.position).normalized * reelSpeed * reelTimer;
+            rb.AddForce((cj.connectedAnchor - transform.position).normalized * reelSpeed * reelTimer * Time.deltaTime, ForceMode.Impulse);
 
             SoftJointLimit distance = cj.linearLimit;
             distance.limit = Vector3.Distance(transform.position, cj.connectedAnchor);
@@ -130,20 +131,36 @@ public class TetherBehaviour : MonoBehaviour
     }
 
     /// <summary>
-    /// Increases the linear limit, reeling out
+    /// Increases tether length
     /// </summary>
     void TetherUnreel()
     {
-        SoftJointLimit distance = cj.linearLimit;
-        distance.limit += reelSpeed * Time.fixedDeltaTime;
-        cj.linearLimit = distance;
+        if (cj.linearLimit.limit != maxLength)
+        {
+            SoftJointLimit distance = cj.linearLimit;
+
+            if (cj.linearLimit.limit < maxLength)
+            {
+                distance.limit += reelSpeed * Time.fixedDeltaTime;
+                cj.linearLimit = distance;
+            }
+            else
+            {
+                distance.limit = maxLength;
+                cj.linearLimit = distance;
+            }
+        }
     }
 
+    /// <summary>
+    /// Cuts the tether
+    /// </summary>
     void CutTether()
     {
         cj.xMotion = ConfigurableJointMotion.Free;
         cj.yMotion = ConfigurableJointMotion.Free;
         cj.zMotion = ConfigurableJointMotion.Free;
+
         connected = false;
     }
 }
