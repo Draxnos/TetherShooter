@@ -16,16 +16,23 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
 
     public int fireType;
     public int reloadType;
+
     public int burstCount;
+    public float burstRate;
     public int burst;
+
+    public float chargeRate;
+    public float maxCharge;
+    public float charge;
+
     public int maxAmmo;
     public int ammo;
+
     public float fireRate;
     public float reloadRate;
+
     public float damage;
     public float maxDamage;
-
-    public Vector3 tracerStart;
 
     public string enemyTeam;
 
@@ -71,6 +78,7 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
                         }
 
                         break;
+
                     //Auto
                     case 1:
 
@@ -82,16 +90,45 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
                         }
 
                         break;
-                    //Charged
+
+                    //Burst
                     case 2:
-                        while (Input.GetKey(mb.keys[11]))
+                        if (Input.GetKeyDown(mb.keys[11]))
                         {
-                            
+                            while (burst < burstCount && ammo > 0)
+                            {
+                                Fire(maxProjectileForce);
+
+                                burst++;
+
+                                yield return new WaitForSeconds(burstRate);
+                            }
+
+                            yield return new WaitForSeconds(fireRate);
                         }
 
-                        Fire(maxProjectileForce);
+                        break;
 
-                        yield return new WaitForSeconds(fireRate);
+                    //Charge
+                    case 3:
+                        while (Input.GetKey(mb.keys[11]) && charge < maxCharge)
+                        {
+                            charge += Time.deltaTime * chargeRate;
+
+                            if (charge > maxCharge)
+                            {
+                                charge = maxCharge;
+                            }
+                        }
+
+                        if (Input.GetKeyUp(mb.keys[11]))
+                        {
+                            Fire(charge);
+
+                            charge = 0;
+
+                            yield return new WaitForSeconds(fireRate);
+                        }
 
                         break;
                 }
@@ -131,6 +168,7 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
                         }
                         
                         break;
+
                     //Per Shot
                     case 1:
 
@@ -153,31 +191,17 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
         }
     }
 
-    IEnumerator Tracer(TrailRenderer trail, Vector3 hit)
-    {
-        float time = 0;
-        Vector3 startPosition = trail.transform.position;
-
-        while (time < 1)
-        {
-            trail.transform.position = Vector3.Lerp(startPosition, hit, time);
-
-            time += Time.deltaTime / trail.time;
-
-            yield return null;
-        }
-
-        trail.transform.position = Vector3.Lerp(startPosition, hit, time);
-
-        Destroy(trail.gameObject, trail.time);
-    }
-
     public void SwitchFire()
     {
         fireType++;
 
         switch (fireType)
         {
+            default:
+                fireType = 0;
+                mode.text = "Semi";
+
+                break;
             case 1:
                 mode.text = "Auto";
 
@@ -187,8 +211,7 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
 
                 break;
             case 3:
-                mode.text = "Semi";
-                fireType = 0;
+                mode.text = "Charge";
 
                 break;
         }

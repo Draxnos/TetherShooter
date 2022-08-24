@@ -12,6 +12,7 @@ public class HitScanBehaviour : MonoBehaviour
 
     public int fireType;
     public int burstCount;
+    public int burstRate;
     public int burst;
     public int maxAmmo;
     public int ammo;
@@ -86,10 +87,12 @@ public class HitScanBehaviour : MonoBehaviour
 
                                 burst++;
 
-                                yield return new WaitForSeconds(fireRate);
+                                yield return new WaitForSeconds(burstRate);
                             }
 
                             burst = 0;
+
+                            yield return new WaitForSeconds(fireRate);
                         }
 
                         break;
