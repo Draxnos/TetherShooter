@@ -5,11 +5,23 @@ using UnityEngine;
 public class PlayerBehaviour : MonoBehaviour
 {
     /// <summary>
+    /// Personal Settings
+    /// </summary>
+    public float sensitivity = 200f;
+
+    public bool paused = false;
+
+    public int hori;
+    public int vert;
+
+    /// <summary>
     /// The basics
     /// </summary>
     public Camera cam;
     public Rigidbody rb;
     public CapsuleCollider coll;
+    public TetherBehaviour tb;
+    public MenuBehaviour mb;
 
     public Vector3 standOffset = new Vector3(0f, 0.5369999f, 0f);
     public Vector3 crouchOffset = Vector3.zero;
@@ -22,8 +34,6 @@ public class PlayerBehaviour : MonoBehaviour
     public PhysicMaterial normal;
     public PhysicMaterial slip;
     public ContactPoint[] contacts;
-    public Vector3 groundNormals;
-    public Vector3 hits;
     public Vector3 groundNormal;
     public Vector3 point;
     public Vector3 curveCenterBottom;
@@ -40,37 +50,37 @@ public class PlayerBehaviour : MonoBehaviour
     public float speedCap = 10f;
 
     public Vector3 finalMove;
-    
+
     /// <summary>
     /// Jump shit
     /// </summary>
     public float jumpForce = 200f;
     public bool jumped = false;
     public bool wallHop;
-    public bool wallHopped = false;
     public Vector3 wallNormal;
     public Vector3 perpRight;
     public Vector3 perpLeft;
 
     public bool crouched = false;
 
-    public TetherBehaviour tb;
-
     /// <summary>
-    /// Personal Settings
+    /// Ledge maneuver shit
     /// </summary>
-    public KeyCode jump = KeyCode.Space;
-    public KeyCode sprint = KeyCode.LeftControl;
-    public KeyCode crouch = KeyCode.LeftShift;
-    public float sensitivity = 200f;
+    public float ledgeDistance;
+    public float climbSpeed;
+    public RaycastHit ledgeCheck;
 
     /// <summary>
     /// Runs once, at start
     /// </summary>
     void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
+        cam = Camera.main;
+        coll = gameObject.GetComponent<CapsuleCollider>();
+        rb = gameObject.GetComponent<Rigidbody>();
         tb = gameObject.GetComponent<TetherBehaviour>();
+        mb = gameObject.GetComponent<MenuBehaviour>();
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     /// <summary>
@@ -78,14 +88,17 @@ public class PlayerBehaviour : MonoBehaviour
     /// </summary>
     void Update()
     {
-        moveDir = (transform.right * Input.GetAxisRaw("Horizontal") + transform.forward * Input.GetAxisRaw("Vertical")).normalized;
-        CameraMovement();
-        Crouch();
-        Jump();
+        vert = (Input.GetKey(mb.keys[0]) ? 1 : 0) * 1 + (Input.GetKey(mb.keys[1]) ? 1 : 0) * -1;
+        hori = (Input.GetKey(mb.keys[3]) ? 1 : 0) * 1 + (Input.GetKey(mb.keys[2]) ? 1 : 0) * -1;
 
-        if (Input.GetKey(KeyCode.R))
+
+        if (!paused)
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+            moveDir = (transform.right * hori + transform.forward * vert).normalized;
+            CameraMovement();
+            Crouch();
+            Jump();
+            LedgeManeuver();
         }
     }
 
@@ -97,40 +110,15 @@ public class PlayerBehaviour : MonoBehaviour
         if (grounded == true)
         {
             coll.material = normal;
-
-            if(moveDir != Vector3.zero)
-            {
-                Movement();
-            }
         }
         else
         {
             coll.material = slip;
         }
-    }
 
-    /// <summary>
-    /// Calls GroundCheck, inserting its contact points
-    /// </summary>
-    /// <param name="collision"></param>
-    private void OnCollisionEnter(Collision collision)
-    {
-        contacts = new ContactPoint[collision.contactCount];
-        collision.GetContacts(contacts);
-        GroundCheck(contacts);
-    }
-
-    /// <summary>
-    /// Use in case groundcheck failure
-    /// </summary>
-    /// <param name="collision"></param>
-    private void OnCollisionStay(Collision collision)
-    {
-        if (grounded == false)
+        if (moveDir != Vector3.zero && !paused)
         {
-            contacts = new ContactPoint[collision.contactCount];
-            collision.GetContacts(contacts);
-            GroundCheck(contacts);
+            Movement();
         }
     }
 
@@ -141,9 +129,9 @@ public class PlayerBehaviour : MonoBehaviour
     /// </summary>
     void CameraMovement()
     {
-        xRotation = Mathf.Clamp(xRotation - Input.GetAxis("Mouse Y") * sensitivity * Time.deltaTime, -90f, 90f);
+        xRotation = Mathf.Clamp(xRotation - Input.GetAxis("Mouse Y") * sensitivity * 50f * Time.deltaTime, -90f, 90f);
         cam.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * Input.GetAxis("Mouse X") * sensitivity * Time.deltaTime);
+        transform.Rotate(Vector3.up * Input.GetAxis("Mouse X") * sensitivity * 50f * Time.deltaTime);
     }
 
     /// <summary>
@@ -152,7 +140,7 @@ public class PlayerBehaviour : MonoBehaviour
     void Crouch()
     {
         //Crouch
-        if (Input.GetKeyDown(crouch) && crouched == false)
+        if (Input.GetKeyDown(mb.keys[5]) && crouched == false)
         {
             coll.height /= 1.5f;
             coll.center = new Vector3(0, -0.25f, 0);
@@ -161,7 +149,7 @@ public class PlayerBehaviour : MonoBehaviour
         }
 
         //Uncrouch
-        if (Input.GetKeyUp(crouch) && crouched == true)
+        if (Input.GetKeyUp(mb.keys[5]) && crouched == true)
         {
             coll.height *= 1.5f;
             coll.center = new Vector3(0, 0, 0);
@@ -180,7 +168,7 @@ public class PlayerBehaviour : MonoBehaviour
         {
             speedCap = crouchSpeed;
         }
-        else if (Input.GetKey(sprint))
+        else if (Input.GetKey(mb.keys[4]))
         {
             speedCap = sprintSpeed;
         }
@@ -190,12 +178,29 @@ public class PlayerBehaviour : MonoBehaviour
         }
 
         //Apply speed
-        if (rb.velocity.magnitude < speedCap)
+        if (rb.velocity.magnitude < speedCap && grounded)
         {
             finalMove = Vector3.ProjectOnPlane(moveDir, groundNormal);
-
-            rb.AddForce(finalMove * moveForce, ForceMode.Impulse);
         }
+        else if (wallHop)
+        {
+            float right = Vector3.Angle(transform.forward, perpRight);
+            float left = Vector3.Angle(transform.forward, perpLeft);
+
+            if (right != left)
+            {
+                if(right > left)
+                {
+                    finalMove = perpLeft;
+                }
+                else
+                {
+                    finalMove = perpRight;
+                }
+            }
+        }
+
+        rb.AddForce(finalMove * moveForce, ForceMode.Impulse);
     }
 
     /// <summary>
@@ -205,7 +210,7 @@ public class PlayerBehaviour : MonoBehaviour
     /// </summary>
     void Jump()
     {
-        if (Input.GetKeyDown(jump))
+        if (Input.GetKeyDown(mb.keys[6]))
         {
             //Regular jump
             if (grounded == true)
@@ -255,6 +260,19 @@ public class PlayerBehaviour : MonoBehaviour
         }
     }
 
+    void LedgeManeuver()
+    {
+        if (Input.GetKey(mb.keys[6]) && moveDir != Vector3.zero)
+        {
+
+
+            if (Physics.Raycast(cam.transform.position, cam.transform.forward, ledgeDistance))
+            {
+
+            }
+        }
+    }
+
     /// <summary>
     /// Script used to find a grounding or wall hop-off point
     /// </summary>
@@ -294,27 +312,6 @@ public class PlayerBehaviour : MonoBehaviour
 
                 wallHop = true;
             }
-        }
-    }
-
-    /// <summary>
-    /// Use in case ground detection failure
-    /// </summary>
-    /// <param name="collision"></param>
-    private void OnCollisionExit(Collision collision)
-    {
-        //Truely ungrounded
-        if (collision.contactCount == 0)
-        {
-            grounded = false;
-            wallHop = false;
-        }
-        //Double check
-        else
-        {
-            contacts = new ContactPoint[collision.contactCount];
-            collision.GetContacts(contacts);
-            GroundCheck(contacts);
         }
     }
 }

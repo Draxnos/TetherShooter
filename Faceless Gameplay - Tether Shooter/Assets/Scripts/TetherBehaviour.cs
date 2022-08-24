@@ -1,28 +1,29 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-/// <summary>
-/// To be used
-/// </summary>
+using UnityEngine.UI;
 
 public class TetherBehaviour : MonoBehaviour
 {
-    public KeyCode sendTether = KeyCode.E;
-    public KeyCode reel = KeyCode.C;
-    public KeyCode unreel = KeyCode.V;
+    public ConfigurableJoint cj;
+    public Rigidbody rb;
+    public LineRenderer lr;
+    public MenuBehaviour mb;
+    public Image indicator;
 
     public bool connected = false;
 
-    public ConfigurableJoint cj;
-    public Rigidbody rb;
     public float maxLength;
+    public float reelForce;
     public float reelSpeed;
     public bool tetherJump = false;
 
     void Start()
     {
-        rb = gameObject.GetComponent<Rigidbody>();
+        rb = GetComponent<Rigidbody>();
+        cj = GetComponent<ConfigurableJoint>();
+        lr = GetComponent<LineRenderer>();
+        mb = GetComponent<MenuBehaviour>();
     }
 
     /// <summary>
@@ -32,14 +33,27 @@ public class TetherBehaviour : MonoBehaviour
     {
         if(connected == false)
         {
-            if (Input.GetKeyDown(sendTether))
+            RaycastHit hit;
+
+            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, maxLength))
             {
-                SendTether();
+                indicator.color = Color.green;
+
+                if (Input.GetKeyDown(mb.keys[7]) && !mb.paused)
+                {
+                    SendTether(hit, Vector3.Distance(hit.point, gameObject.transform.position));
+                }
+            }
+            else
+            {
+                indicator.color = Color.red;
             }
         }
         else
         {
-            if (Input.GetKeyDown(sendTether))
+            lr.SetPosition(0, transform.position);
+
+            if (Input.GetKeyDown(mb.keys[7]) && !mb.paused)
             {
                 CutTether();
             }
@@ -53,21 +67,24 @@ public class TetherBehaviour : MonoBehaviour
     {
         if (connected == true)
         {
-            if (Input.GetKeyUp(reel) || Input.GetKeyUp(unreel))
+            if (Input.GetKeyUp(mb.keys[8]) || Input.GetKeyUp(mb.keys[9]))
             {
                 reelTimer = 0.5f;
             }
 
-            if (Input.GetKey(reel))
+            if (!mb.paused)
             {
-                TetherReel();
-            }
-            else if (Input.GetKey(unreel) && cj.linearLimit.limit < maxLength)
-            {
-                TetherUnreel();
+                if (Input.GetKey(mb.keys[8]))
+                {
+                    TetherReel();
+                }
+                else if (Input.GetKey(mb.keys[9]) && cj.linearLimit.limit < maxLength)
+                {
+                    TetherUnreel();
+                }
             }
 
-            if ((transform.position - cj.connectedAnchor).magnitude >= cj.linearLimit.limit)
+            if ((transform.position - cj.connectedAnchor).magnitude >= cj.linearLimit.limit + 1 && connected == true)
             {
                 tetherJump = true;
             }
@@ -81,27 +98,21 @@ public class TetherBehaviour : MonoBehaviour
     /// <summary>
     /// Creates a tether if the player is looking at a valid point
     /// </summary>
-    void SendTether()
+    void SendTether(RaycastHit hit, float dist)
     {
-        RaycastHit hit;
+        lr.enabled = true;
+        lr.SetPosition(0, transform.position);
+        lr.SetPosition(1, hit.point);
 
-        if(Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
-        {
-            float dist = Vector3.Distance(hit.point, gameObject.transform.position);
+        cj.xMotion = ConfigurableJointMotion.Limited;
+        cj.yMotion = ConfigurableJointMotion.Limited;
+        cj.zMotion = ConfigurableJointMotion.Limited;
 
-            if (Vector3.Distance(hit.point, gameObject.transform.position) < maxLength)
-            {
-                cj.xMotion = ConfigurableJointMotion.Limited;
-                cj.yMotion = ConfigurableJointMotion.Limited;
-                cj.zMotion = ConfigurableJointMotion.Limited;
-
-                cj.connectedAnchor = hit.point;
-                SoftJointLimit ll = cj.linearLimit;
-                ll.limit = dist;
-                cj.linearLimit = ll;
-                connected = true;
-            }
-        }
+        cj.connectedAnchor = hit.point;
+        SoftJointLimit ll = cj.linearLimit;
+        ll.limit = dist;
+        cj.linearLimit = ll;
+        connected = true;
     }
 
     public float reelTimer = 0.5f;
@@ -122,7 +133,7 @@ public class TetherBehaviour : MonoBehaviour
 
         if (cj.linearLimit.limit >= 1)
         {
-            rb.AddForce((cj.connectedAnchor - transform.position).normalized * reelSpeed * reelTimer * Time.deltaTime, ForceMode.Impulse);
+            rb.AddForce((cj.connectedAnchor - transform.position).normalized * reelForce * reelTimer * Time.deltaTime, ForceMode.Impulse);
 
             SoftJointLimit distance = cj.linearLimit;
             distance.limit = Vector3.Distance(transform.position, cj.connectedAnchor);
@@ -162,5 +173,6 @@ public class TetherBehaviour : MonoBehaviour
         cj.zMotion = ConfigurableJointMotion.Free;
 
         connected = false;
+        lr.enabled = false;
     }
 }
