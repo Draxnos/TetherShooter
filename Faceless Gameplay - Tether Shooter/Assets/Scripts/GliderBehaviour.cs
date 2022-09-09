@@ -4,6 +4,14 @@ using UnityEngine;
 
 public class GliderBehaviour : MonoBehaviour
 {
+    public GameObject cam;
+
+    public Vector3 lookDir;
+
+    public float maxVel;
+
+
+
     // Start is called before the first frame update
     void Start()
     {
