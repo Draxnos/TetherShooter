@@ -12,6 +12,7 @@ public class TetherBehaviour : MonoBehaviour
     public Image indicator;
 
     public bool connected = false;
+    public Vector3 camPos;
 
     public float maxLength;
     public float reelForce;
@@ -20,6 +21,7 @@ public class TetherBehaviour : MonoBehaviour
 
     void Start()
     {
+        camPos = Camera.main.transform.localPosition;
         rb = GetComponent<Rigidbody>();
         cj = GetComponent<ConfigurableJoint>();
         lr = GetComponent<LineRenderer>();
@@ -35,13 +37,13 @@ public class TetherBehaviour : MonoBehaviour
         {
             RaycastHit hit;
 
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, maxLength))
+            if (Physics.Raycast(transform.position + camPos, Camera.main.transform.forward, out hit, maxLength))
             {
                 indicator.color = Color.green;
 
                 if (Input.GetKeyDown(mb.keys[7]) && !mb.paused)
                 {
-                    SendTether(hit, Vector3.Distance(hit.point, gameObject.transform.position));
+                    SendTether(hit, Vector3.Distance(hit.point, transform.position));
                 }
             }
             else

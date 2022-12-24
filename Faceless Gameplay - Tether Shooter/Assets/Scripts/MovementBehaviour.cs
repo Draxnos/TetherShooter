@@ -16,6 +16,7 @@ public class MovementBehaviour : MonoBehaviour
     public int hori;
     public int vert;
     public Vector3 moveDir;
+    public Vector3 startPos;
     public float moveForce = 10;
     public float walkSpeed = 10f;
     public float sprintSpeed = 20f;
@@ -42,6 +43,7 @@ public class MovementBehaviour : MonoBehaviour
         cb = GetComponent<CollisionBehaviour>();
         coll = GetComponent<CapsuleCollider>();
         cam = GetComponentInChildren<Camera>();
+        startPos = transform.position;
         Cursor.lockState = CursorLockMode.Locked;
     }
 
@@ -158,5 +160,10 @@ public class MovementBehaviour : MonoBehaviour
         }
 
         rb.AddForce(finalMove * moveForce, ForceMode.Impulse);
+    }
+
+    public void ResetPos()
+    {
+        transform.position = startPos;
     }
 }
