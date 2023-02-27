@@ -20,6 +20,7 @@ public class JumpBehaviour : MonoBehaviour
     /// Jump shit
     /// </summary>
     public float jumpForce = 200f;
+    public float minAngle = 10f;
 
     private void Awake()
     {
@@ -63,9 +64,9 @@ public class JumpBehaviour : MonoBehaviour
         else if (cb.wallHop == true)
         {
             Quaternion correction = Quaternion.identity;
-
-            Vector3 left = Quaternion.AngleAxis(10f, Vector3.up) * cb.perpLeft;
-            Vector3 right = Quaternion.AngleAxis(-10f, Vector3.up) * cb.perpRight;
+            
+            Vector3 left = Quaternion.AngleAxis(minAngle, Vector3.up) * cb.perpLeft;
+            Vector3 right = Quaternion.AngleAxis(-minAngle, Vector3.up) * cb.perpRight;
             float angleSize = Vector3.Angle(left, right);
 
             float angleLeft = Vector3.Angle(transform.forward, left);
@@ -74,15 +75,16 @@ public class JumpBehaviour : MonoBehaviour
             float angleTRight = Vector3.Angle(transform.forward, cb.perpRight);
 
             Vector3 hopDir = Quaternion.AngleAxis(45, -transform.right) * transform.forward;
+            print(hopDir);
 
             //Angle depth correction
             if (angleLeft + angleRight > angleSize)
             {
-                if (angleTLeft < 20)
+                if (angleTLeft < 2 * minAngle)
                 {
                     correction = Quaternion.AngleAxis(angleLeft, Vector3.up);
                 }
-                else if (angleTRight < 20)
+                else if (angleTRight < 2 * minAngle)
                 {
                     correction = Quaternion.AngleAxis(angleRight, Vector3.down);
                 }

@@ -116,9 +116,16 @@ public class CollisionBehaviour : MonoBehaviour
             else
             {
                 grounded = false;
+                wallHop = false;
                 coll.material = slip;
                 jb.ungroundDouble = false;
             }
+        }
+        else
+        {
+            contacts = new ContactPoint[collision.contactCount];
+            collision.GetContacts(contacts);
+            GroundCheck(contacts);
         }
     }
 

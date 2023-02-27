@@ -1,26 +1,66 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class GliderBehaviour : MonoBehaviour
 {
+    private PlayerControls pcs;
+
+    private InputAction look;
+    private InputAction jump;
+
     public GameObject cam;
+    public CollisionBehaviour cb;
+    public Rigidbody rb;
 
     public Vector3 lookDir;
 
-    public float maxVel;
+    public float glideRatio;
 
+    public bool glide = false;
 
-
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
-        
+        pcs = InputManager.pcs;
+
+        look = pcs.Gameplay.Look;
+        jump = pcs.Gameplay.Jump;
+
+        rb = GetComponent<Rigidbody>();
+        cb = GetComponent<CollisionBehaviour>();
+        cam = Camera.main.gameObject;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void OnEnable()
     {
-        
+        jump.performed += _ => glide = true;
+        jump.canceled += _ => glide = false;
+    }
+
+    private void OnDisable()
+    {
+        jump.performed -= _ => glide = true;
+        jump.canceled -= _ => glide = false;
+    }
+
+    private void FixedUpdate()
+    {
+        if (!cb.grounded && glide)
+        {
+            float forwardAngle = Vector3.Angle(cam.transform.forward, Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up));
+            print(forwardAngle);
+            float scalar = glideRatio * ((90 - forwardAngle) / 90);
+            print(scalar);
+
+            if (cam.transform.forward.y < 0 && rb.velocity.y < 0)
+            {
+                rb.AddForce(((-transform.up * cam.transform.InverseTransformDirection(rb.velocity).y) * ((scalar * (glideRatio - 1 / glideRatio)) / glideRatio) + -cam.transform.forward * cam.transform.InverseTransformDirection(rb.velocity).y * scalar), ForceMode.Acceleration);
+            }
+            else if (cam.transform.forward.y > 0)
+            {
+                
+            }
+        }
     }
 }

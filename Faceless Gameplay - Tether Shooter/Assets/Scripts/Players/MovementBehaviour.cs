@@ -27,10 +27,12 @@ public class MovementBehaviour : MonoBehaviour
     public bool sprint = false;
     public bool crouch = false;
     public float moveForce = 10;
+    public float wallForce = 100;
     public float walkSpeed = 10f;
     public float sprintSpeed = 20f;
     public float crouchSpeed = 5f;
     public float speedCap = 10f;
+    public float wallUp = 0.5f;
 
     public Vector3 finalMove;
     public bool canMove;
@@ -116,7 +118,7 @@ public class MovementBehaviour : MonoBehaviour
     /// </summary>
     void FixedUpdate()
     {
-        if (moveDir != Vector3.zero && !mb.paused && cb.grounded)
+        if (moveDir != Vector3.zero && !mb.paused)
         {
             Movement();
         }
@@ -174,7 +176,8 @@ public class MovementBehaviour : MonoBehaviour
     /// </summary>
     void Movement()
     {
-        Vector3 sideForward = transform.InverseTransformDirection(rb.velocity) - Vector3.up * transform.InverseTransformDirection(rb.velocity).y;
+        Vector3 sideForward = rb.velocity - Vector3.up * rb.velocity.y;
+        float force = 0;
 
         //Apply speed
         if (rb.velocity.magnitude < speedCap)
@@ -182,15 +185,15 @@ public class MovementBehaviour : MonoBehaviour
             if (cb.grounded)
             {
                 finalMove = Vector3.ProjectOnPlane(moveDir, cb.groundNormal);
+                force = moveForce;
             }
             else if (cb.wallHop)
             {
-                float right = Vector3.Angle(transform.forward, cb.perpRight);
-                float left = Vector3.Angle(transform.forward, cb.perpLeft);
+                float right = Vector3.Angle(moveDir, cb.perpRight);
 
-                if (right != left)
+                if (right != 90)
                 {
-                    if (right > left)
+                    if (right > 90)
                     {
                         finalMove = cb.perpLeft;
                     }
@@ -199,7 +202,8 @@ public class MovementBehaviour : MonoBehaviour
                         finalMove = cb.perpRight;
                     }
 
-                    finalMove /= 4;
+                    finalMove /= 8;
+                    force = wallForce;
                 }
             }
         }
@@ -208,11 +212,11 @@ public class MovementBehaviour : MonoBehaviour
             finalMove = Vector3.zero;
         }
 
-        rb.AddForce(finalMove * moveForce, ForceMode.Acceleration);
+        rb.AddForce(finalMove * force, ForceMode.Acceleration);
 
-        if (sideForward.magnitude > speedCap)
+        if (sideForward.magnitude > speedCap && cb.grounded)
         {
-            rb.velocity = Vector3.ClampMagnitude(rb.velocity, speedCap);
+            rb.velocity = Vector3.ClampMagnitude(sideForward, speedCap) + new Vector3(0, rb.velocity.y, 0);
         }
     }
 

@@ -19,6 +19,7 @@ public class TetherBehaviour : MonoBehaviour
     public MenuBehaviour mb;
     public Image indicator;
     public RaycastHit hit;
+    public LayerMask lm;
 
     public bool canSend = false;
     public bool connected = false;
@@ -28,6 +29,7 @@ public class TetherBehaviour : MonoBehaviour
     public float reelForce;
     public float reelSpeed;
     public int reelDir;
+    public float dist;
     public bool tetherJump = false;
 
     public void Awake()
@@ -43,6 +45,8 @@ public class TetherBehaviour : MonoBehaviour
         tetherUnreel.performed += _ => reelDir--;
         tetherReel.canceled += _ => reelDir--;
         tetherUnreel.canceled += _ => reelDir++;
+
+        lm = LayerMask.GetMask("Player");
     }
 
     private void OnEnable()
@@ -84,10 +88,11 @@ public class TetherBehaviour : MonoBehaviour
     /// </summary>
     void Update()
     {
-        if (Physics.Raycast(transform.position + camPos, Camera.main.transform.forward, out hit, maxLength))
+        if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, maxLength, ~lm))
         {
             indicator.color = Color.green;
             canSend = true;
+            dist = hit.distance;
         }
         else
         {
@@ -134,7 +139,7 @@ public class TetherBehaviour : MonoBehaviour
         {
             if (!connected && canSend)
             {
-                SendTether(hit, maxLength);
+                SendTether(hit);
                 jb.ungroundDouble = false;
             }
             else
@@ -147,7 +152,7 @@ public class TetherBehaviour : MonoBehaviour
     /// <summary>
     /// Creates a tether if the player is looking at a valid point
     /// </summary>
-    void SendTether(RaycastHit hit, float dist)
+    void SendTether(RaycastHit hit)
     {
         lr.enabled = true;
         lr.SetPosition(0, transform.position);
