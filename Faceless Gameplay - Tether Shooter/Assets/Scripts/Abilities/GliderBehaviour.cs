@@ -49,9 +49,7 @@ public class GliderBehaviour : MonoBehaviour
         if (!cb.grounded && glide)
         {
             float forwardAngle = Vector3.Angle(cam.transform.forward, Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up));
-            print(forwardAngle);
             float scalar = glideRatio * ((90 - forwardAngle) / 90);
-            print(scalar);
 
             if (cam.transform.forward.y < 0 && rb.velocity.y < 0)
             {
