@@ -50,7 +50,8 @@ public class MeshGenerator : MonoBehaviour {
 
     bool settingsUpdated;
 
-    void Awake() {
+    void Awake() 
+    {
         if (Application.isPlaying && !fixedMapSize) 
         {
             InitVariableChunkStructures();
@@ -67,7 +68,7 @@ public class MeshGenerator : MonoBehaviour {
     void Update() 
     {
         // Update endless terrain
-        if ((Application.isPlaying && !fixedMapSize)) 
+        if (Application.isPlaying && !fixedMapSize) 
         {
             Run();
         }
@@ -87,7 +88,6 @@ public class MeshGenerator : MonoBehaviour {
         {
             InitChunks();
             UpdateAllChunks();
-
         }
         else 
         {
@@ -300,7 +300,8 @@ public class MeshGenerator : MonoBehaviour {
 
     void ReleaseBuffers()
     {
-        if (triangleBuffer != null) {
+        if (triangleBuffer != null) 
+        {
             triangleBuffer.Release();
             pointsBuffer.Release();
             triCountBuffer.Release();
@@ -310,7 +311,8 @@ public class MeshGenerator : MonoBehaviour {
     Vector3 CentreFromCoord(Vector3Int coord)
     {
         // Centre entire map at origin
-        if (fixedMapSize) {
+        if (fixedMapSize)
+        {
             Vector3 totalBounds = (Vector3) numChunks * boundsSize;
             return -totalBounds / 2 + (Vector3) coord * boundsSize + Vector3.one * boundsSize / 2;
         }

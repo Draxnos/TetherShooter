@@ -36,6 +36,7 @@ public class Chunk : MonoBehaviour
         meshRenderer = GetComponent<MeshRenderer> ();
         meshCollider = GetComponent<MeshCollider> ();
 
+        //Adding missing components...
         if (meshFilter == null) 
         {
             meshFilter = gameObject.AddComponent<MeshFilter> ();
@@ -55,6 +56,7 @@ public class Chunk : MonoBehaviour
             DestroyImmediate (meshCollider);
         }
 
+        //Check for mesh
         mesh = meshFilter.sharedMesh;
 
         if (mesh == null) 
