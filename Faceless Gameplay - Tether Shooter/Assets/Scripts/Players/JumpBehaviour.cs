@@ -71,14 +71,14 @@ public class JumpBehaviour : MonoBehaviour
 
             float angleLeft = Vector3.Angle(transform.forward, left);
             float angleRight = Vector3.Angle(right, transform.forward);
+            float angleForward = Vector3.Angle(transform.forward, cb.wallNormal);
             float angleTLeft = Vector3.Angle(cb.perpLeft, transform.forward);
             float angleTRight = Vector3.Angle(transform.forward, cb.perpRight);
 
             Vector3 hopDir = Quaternion.AngleAxis(45, -transform.right) * transform.forward;
-            print(hopDir);
 
             //Angle depth correction
-            if (angleLeft + angleRight > angleSize)
+            if (angleForward > angleSize / 2)
             {
                 if (angleTLeft < 2 * minAngle)
                 {
@@ -97,7 +97,7 @@ public class JumpBehaviour : MonoBehaviour
             rb.AddForce(correction * hopDir.normalized * jumpForce * 1.5f, ForceMode.Impulse);
         }
         //Tether hop
-        else if (tb.tetherJump == true)
+        else if (tb && tb.tetherJump == true)
         {
             rb.AddForce((tb.cj.connectedAnchor - transform.position).normalized * jumpForce, ForceMode.Impulse);
         }

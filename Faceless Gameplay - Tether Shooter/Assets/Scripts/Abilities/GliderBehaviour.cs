@@ -51,14 +51,9 @@ public class GliderBehaviour : MonoBehaviour
             float forwardAngle = Vector3.Angle(cam.transform.forward, Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up));
             float scalar = glideRatio * ((90 - forwardAngle) / 90);
 
-            if (cam.transform.forward.y < 0 && rb.velocity.y < 0)
-            {
-                rb.AddForce(((-transform.up * cam.transform.InverseTransformDirection(rb.velocity).y) * ((scalar * (glideRatio - 1 / glideRatio)) / glideRatio) + -cam.transform.forward * cam.transform.InverseTransformDirection(rb.velocity).y * scalar), ForceMode.Acceleration);
-            }
-            else if (cam.transform.forward.y > 0)
-            {
-                
-            }
+            rb.velocity = new Vector3(0, rb.velocity.y, 0) + transform.forward * new Vector3(rb.velocity.x, 0, rb.velocity.z).magnitude;
+
+            rb.AddForce((cam.transform.up * cam.transform.InverseTransformDirection(-rb.velocity).y) + cam.transform.forward * -rb.velocity.y, ForceMode.Acceleration);
         }
     }
 }

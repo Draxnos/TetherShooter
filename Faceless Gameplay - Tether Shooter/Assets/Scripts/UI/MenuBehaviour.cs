@@ -39,8 +39,8 @@ public class MenuBehaviour : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        defControls = keys;
-        KeyCheck();
+        //defControls = keys;
+        //KeyCheck();
         SensitivityChange();
     }
 
@@ -188,7 +188,7 @@ public class MenuBehaviour : MonoBehaviour
     {
         for (int i = 0; i < keyNames.Count; i++)
         {
-            PlayerPrefs.SetInt(keyNames[i], (int)keys[i]);
+            //PlayerPrefs.SetInt(keyNames[i], (int)keys[i]);
             PlayerPrefs.SetFloat(sens, sensitivity);
         }
     }
@@ -232,5 +232,6 @@ public class MenuBehaviour : MonoBehaviour
     {
         sensitivity = sensitivitySlider.value;
         sensObj.text = sensitivity.ToString();
+        PlayerPrefs.SetFloat(sens, sensitivity);
     }
 }

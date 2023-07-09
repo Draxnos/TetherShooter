@@ -12,13 +12,15 @@ public class CharacterBehaviour : MonoBehaviour
     public Slider healthBar;
     public GameObject canvas;
 
-    public Transform player;
+    public string player;
+    public Transform players;
 
     // Start is called before the first frame update
     void Start()
     {
         healthBar.maxValue = maxHealth;
         health = maxHealth;
+        players = GameObject.Find("Player (Split)").transform;
     }
 
     // Update is called once per frame
@@ -27,7 +29,7 @@ public class CharacterBehaviour : MonoBehaviour
         if (health != maxHealth)
         {
             healthBarObj.SetActive(true);
-            canvas.transform.LookAt(player);
+            canvas.transform.LookAt(players);
         }
         else
         {

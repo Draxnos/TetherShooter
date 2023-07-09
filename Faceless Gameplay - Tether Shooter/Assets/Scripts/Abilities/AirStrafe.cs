@@ -18,6 +18,7 @@ public class AirStrafe : MonoBehaviour
     public bool canMove = true;
     public Vector3 moveDir;
     public float airForce;
+    public float speedCap;
 
     // Start is called before the first frame update
     void Start()
@@ -25,6 +26,7 @@ public class AirStrafe : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         mb = GetComponent<MenuBehaviour>();
         cb = GetComponent<CollisionBehaviour>();
+        mvb = GetComponent<MovementBehaviour>();
     }
 
     // Update is called once per frame
@@ -32,14 +34,14 @@ public class AirStrafe : MonoBehaviour
     {
         if (!mb.paused)
         {
-            canMove = true;
+            canMove = !mb.paused && !cb.grounded;
             moveDir = mvb.moveDir;
         }
     }
 
     private void FixedUpdate()
     {
-        if (moveDir != Vector3.zero && !mb.paused)
+        if (moveDir != Vector3.zero && canMove)
         {
             Movement();
         }
@@ -47,6 +49,13 @@ public class AirStrafe : MonoBehaviour
 
     void Movement()
     {
+        Vector3 sideForward = rb.velocity - Vector3.up * rb.velocity.y;
 
+        rb.AddForce(moveDir.normalized * airForce, ForceMode.Acceleration);
+
+        if (sideForward.magnitude > speedCap)
+        {
+            rb.velocity = Vector3.ClampMagnitude(sideForward, speedCap) + new Vector3(0, rb.velocity.y, 0);
+        }
     }
 }

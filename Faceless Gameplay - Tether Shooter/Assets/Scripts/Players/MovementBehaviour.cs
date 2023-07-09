@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 public class MovementBehaviour : MonoBehaviour
 {
     public Rigidbody rb;
+    public TetherBehaviour tb;
     public MenuBehaviour mb;
     public CollisionBehaviour cb;
     public CapsuleCollider coll;
@@ -62,6 +63,7 @@ public class MovementBehaviour : MonoBehaviour
 
         rb = GetComponent<Rigidbody>();
         mb = GetComponent<MenuBehaviour>();
+        tb = GetComponent<TetherBehaviour>();
         cb = GetComponent<CollisionBehaviour>();
         coll = GetComponent<CapsuleCollider>();
         cam = GetComponentInChildren<Camera>();
@@ -107,7 +109,7 @@ public class MovementBehaviour : MonoBehaviour
     {
         if (!mb.paused)
         {
-            canMove = true;
+            canMove = !mb.paused;
             moveDir = transform.TransformDirection(new Vector3(move.ReadValue<Vector2>().x, 0, move.ReadValue<Vector2>().y));
             CameraMovement();
         }
@@ -118,7 +120,7 @@ public class MovementBehaviour : MonoBehaviour
     /// </summary>
     void FixedUpdate()
     {
-        if (moveDir != Vector3.zero && !mb.paused)
+        if (moveDir != Vector3.zero && canMove && !cb.frictionSlide)
         {
             Movement();
         }
@@ -131,9 +133,9 @@ public class MovementBehaviour : MonoBehaviour
     /// </summary>
     void CameraMovement()
     {
-        xRotation = Mathf.Clamp(xRotation - look.ReadValue<Vector2>().y * mb.sensitivity * 50f * Time.deltaTime, -90f, 90f);
+        xRotation = Mathf.Clamp(xRotation - look.ReadValue<Vector2>().y * mb.sensitivity * Time.deltaTime, -90f, 90f);
         cam.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * look.ReadValue<Vector2>().x * mb.sensitivity * 50f * Time.deltaTime);
+        transform.Rotate(Vector3.up * look.ReadValue<Vector2>().x * mb.sensitivity * Time.deltaTime);
     }
 
     public void OnCrouch(InputAction.CallbackContext context)
@@ -189,21 +191,43 @@ public class MovementBehaviour : MonoBehaviour
             }
             else if (cb.wallHop)
             {
-                float right = Vector3.Angle(moveDir, cb.perpRight);
-
-                if (right != 90)
+                if (tb && tb.tetherJump)
                 {
-                    if (right > 90)
-                    {
-                        finalMove = cb.perpLeft;
-                    }
-                    else
-                    {
-                        finalMove = cb.perpRight;
-                    }
+                    float right = Vector3.Angle(moveDir, cb.perpRight);
 
-                    finalMove /= 8;
-                    force = wallForce;
+                    if (right != 90)
+                    {
+                        if (right > 90)
+                        {
+                            finalMove = Quaternion.AngleAxis(Vector3.Angle(Vector3.up, transform.position - tb.hitPoint), cb.wallNormal) * cb.perpLeft;
+                        }
+                        else
+                        {
+                            finalMove = Quaternion.AngleAxis(Vector3.Angle(Vector3.up, transform.position - tb.hitPoint), cb.wallNormal) * cb.perpRight;
+                        }
+
+                        finalMove /= 8;
+                        force = wallForce;
+                    }
+                }
+                else
+                {
+                    float right = Vector3.Angle(moveDir, cb.perpRight);
+
+                    if (right != 90)
+                    {
+                        if (right > 90)
+                        {
+                            finalMove = cb.perpLeft;
+                        }
+                        else
+                        {
+                            finalMove = cb.perpRight;
+                        }
+
+                        finalMove /= 8;
+                        force = wallForce;
+                    }
                 }
             }
         }

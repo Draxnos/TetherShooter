@@ -23,6 +23,7 @@ public class TetherBehaviour : MonoBehaviour
 
     public bool canSend = false;
     public bool connected = false;
+    public bool playerConnect = false;
     public Vector3 camPos;
 
     public float maxLength;
@@ -31,6 +32,8 @@ public class TetherBehaviour : MonoBehaviour
     public int reelDir;
     public float dist;
     public bool tetherJump = false;
+
+    public Vector3 hitPoint;
 
     public void Awake()
     {
@@ -46,7 +49,14 @@ public class TetherBehaviour : MonoBehaviour
         tetherReel.canceled += _ => reelDir--;
         tetherUnreel.canceled += _ => reelDir++;
 
-        lm = LayerMask.GetMask("Player");
+        if (gameObject.CompareTag("Team1"))
+        {
+            lm = LayerMask.GetMask("Team1");
+        }
+        else
+        {
+            lm = LayerMask.GetMask("Team2");
+        }
     }
 
     private void OnEnable()
@@ -154,15 +164,16 @@ public class TetherBehaviour : MonoBehaviour
     /// </summary>
     void SendTether(RaycastHit hit)
     {
+        hitPoint = hit.point;
         lr.enabled = true;
         lr.SetPosition(0, transform.position);
-        lr.SetPosition(1, hit.point);
+        lr.SetPosition(1, hitPoint);
 
         cj.xMotion = ConfigurableJointMotion.Limited;
         cj.yMotion = ConfigurableJointMotion.Limited;
         cj.zMotion = ConfigurableJointMotion.Limited;
 
-        cj.connectedAnchor = hit.point;
+        cj.connectedAnchor = hitPoint;
         SoftJointLimit ll = cj.linearLimit;
         ll.limit = dist;
         cj.linearLimit = ll;

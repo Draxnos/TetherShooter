@@ -107,6 +107,24 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Pause"",
+                    ""type"": ""Button"",
+                    ""id"": ""1b6dc00b-86f7-4a92-b88b-df6d909c40d0"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Reload"",
+                    ""type"": ""Button"",
+                    ""id"": ""3adf588e-ab31-4119-a87c-831acb45cca7"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -252,6 +270,28 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                     ""action"": ""Crouch"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c50805d5-bab8-4660-b386-b2a57b0c7dc3"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""PC"",
+                    ""action"": ""Pause"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""0d80061b-ea13-4d79-bb6f-6b236e1fa2db"",
+                    ""path"": ""<Keyboard>/r"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""PC"",
+                    ""action"": ""Reload"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -297,6 +337,8 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         m_Gameplay_SendTether = m_Gameplay.FindAction("SendTether", throwIfNotFound: true);
         m_Gameplay_ReelTether = m_Gameplay.FindAction("ReelTether", throwIfNotFound: true);
         m_Gameplay_UnreelTether = m_Gameplay.FindAction("UnreelTether", throwIfNotFound: true);
+        m_Gameplay_Pause = m_Gameplay.FindAction("Pause", throwIfNotFound: true);
+        m_Gameplay_Reload = m_Gameplay.FindAction("Reload", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -365,6 +407,8 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
     private readonly InputAction m_Gameplay_SendTether;
     private readonly InputAction m_Gameplay_ReelTether;
     private readonly InputAction m_Gameplay_UnreelTether;
+    private readonly InputAction m_Gameplay_Pause;
+    private readonly InputAction m_Gameplay_Reload;
     public struct GameplayActions
     {
         private @PlayerControls m_Wrapper;
@@ -378,6 +422,8 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         public InputAction @SendTether => m_Wrapper.m_Gameplay_SendTether;
         public InputAction @ReelTether => m_Wrapper.m_Gameplay_ReelTether;
         public InputAction @UnreelTether => m_Wrapper.m_Gameplay_UnreelTether;
+        public InputAction @Pause => m_Wrapper.m_Gameplay_Pause;
+        public InputAction @Reload => m_Wrapper.m_Gameplay_Reload;
         public InputActionMap Get() { return m_Wrapper.m_Gameplay; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -414,6 +460,12 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                 @UnreelTether.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnUnreelTether;
                 @UnreelTether.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnUnreelTether;
                 @UnreelTether.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnUnreelTether;
+                @Pause.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnPause;
+                @Pause.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnPause;
+                @Pause.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnPause;
+                @Reload.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnReload;
+                @Reload.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnReload;
+                @Reload.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnReload;
             }
             m_Wrapper.m_GameplayActionsCallbackInterface = instance;
             if (instance != null)
@@ -445,6 +497,12 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                 @UnreelTether.started += instance.OnUnreelTether;
                 @UnreelTether.performed += instance.OnUnreelTether;
                 @UnreelTether.canceled += instance.OnUnreelTether;
+                @Pause.started += instance.OnPause;
+                @Pause.performed += instance.OnPause;
+                @Pause.canceled += instance.OnPause;
+                @Reload.started += instance.OnReload;
+                @Reload.performed += instance.OnReload;
+                @Reload.canceled += instance.OnReload;
             }
         }
     }
@@ -478,5 +536,7 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         void OnSendTether(InputAction.CallbackContext context);
         void OnReelTether(InputAction.CallbackContext context);
         void OnUnreelTether(InputAction.CallbackContext context);
+        void OnPause(InputAction.CallbackContext context);
+        void OnReload(InputAction.CallbackContext context);
     }
 }

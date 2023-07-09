@@ -1,13 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class ProjectileLauncherBehaviour : MonoBehaviour
 {
+    public PlayerControls pcs;
+
+    public InputAction shoot;
+    public InputAction reload;
+
     public MenuBehaviour mb;
     public Camera cam;
-    public TrailRenderer bt;
     public Text clipHUD;
     public GameObject projectile;
 
@@ -25,6 +30,9 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
     public float maxCharge;
     public float charge;
 
+    public bool fire = false;
+    public bool reloading = false;
+
     public int maxAmmo;
     public int ammo;
 
@@ -39,8 +47,17 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
     public Text mode;
 
     // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
+        pcs = InputManager.pcs;
+
+        shoot = pcs.Gameplay.Shoot;
+        reload = pcs.Gameplay.Reload;
+
+        shoot.performed += OnShoot;
+        shoot.canceled += OnShoot;
+        reload.performed += OnReload;
+
         mb = GetComponent<MenuBehaviour>();
         cam = GetComponentInChildren<Camera>();
 
@@ -60,6 +77,49 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        shoot.Enable();
+        reload.Enable();
+        reload.performed += OnReload;
+        shoot.performed += OnShoot;
+        shoot.canceled += OnShoot;
+    }
+
+    private void OnDisable()
+    {
+        reload.performed -= OnReload;
+        shoot.performed -= OnShoot;
+        shoot.canceled -= OnShoot;
+        shoot.Disable();
+        reload.Disable();
+    }
+
+    private void FixedUpdate()
+    {
+        if (fireType == 3 && fire && charge != maxCharge)
+        {
+            
+        }
+    }
+
+    public void OnShoot(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            fire = true;
+            
+            if (ammo > 0 && reloading)
+            {
+                reloading = false;
+            }
+        }
+        else if (context.canceled)
+        {
+            fire = false;
+        }
+    }
+
     IEnumerator Shooting()
     {
         while (true)
@@ -70,9 +130,10 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
                 {
                     //Semi
                     case 0:
-                        if (Input.GetKeyDown(mb.keys[11]))
+                        if (fire)
                         {
                             Fire(maxProjectileForce);
+                            fire = false;
 
                             yield return new WaitForSeconds(fireRate);
                         }
@@ -82,7 +143,7 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
                     //Auto
                     case 1:
 
-                        while (Input.GetKey(mb.keys[11]))
+                        while (fire)
                         {
                             Fire(maxProjectileForce);
 
@@ -93,7 +154,7 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
 
                     //Burst
                     case 2:
-                        if (Input.GetKeyDown(mb.keys[11]))
+                        if (fire)
                         {
                             while (burst < burstCount && ammo > 0)
                             {
@@ -111,17 +172,19 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
 
                     //Charge
                     case 3:
-                        while (Input.GetKey(mb.keys[11]) && charge < maxCharge)
+                        while (fire && charge != maxCharge)
                         {
-                            charge += Time.deltaTime * chargeRate;
+                            charge += Time.fixedDeltaTime * chargeRate;
 
                             if (charge > maxCharge)
                             {
                                 charge = maxCharge;
                             }
+
+                            yield return null;
                         }
 
-                        if (Input.GetKeyUp(mb.keys[11]))
+                        if (!fire && charge > 0)
                         {
                             Fire(charge);
 
@@ -147,6 +210,21 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
         rb_.AddForce(cam.transform.forward * force);
     }
 
+    public void OnReload(InputAction.CallbackContext context)
+    {
+        if (context.performed && ammo < maxAmmo)
+        {
+            if (!reloading)
+            {
+                reloading = true;
+            }
+            else
+            {
+                reloading = false;
+            }
+        }
+    }
+
     IEnumerator Reload()
     {
         while (true)
@@ -157,7 +235,7 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
                 {
                     //Clip
                     case 0:
-                        if (Input.GetKeyDown(mb.keys[12]))
+                        if (reloading)
                         {
                             ammo = 0;
 
@@ -172,15 +250,12 @@ public class ProjectileLauncherBehaviour : MonoBehaviour
                     //Per Shot
                     case 1:
 
-                        if (Input.GetKey(mb.keys[12]))
+                        while (reloading && ammo < maxAmmo)
                         {
-                            while (ammo < maxAmmo)
-                            {
-                                yield return new WaitForSeconds(reloadRate);
+                            yield return new WaitForSeconds(reloadRate);
 
-                                ammo++;
-                                clipHUD.text = ammo + " / " + maxAmmo;
-                            }
+                            ammo++;
+                            clipHUD.text = ammo + " / " + maxAmmo;
                         }
 
                         break;

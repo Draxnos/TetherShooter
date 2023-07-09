@@ -9,6 +9,7 @@ public class HitScanBehaviour : MonoBehaviour
     public PlayerControls pcs;
 
     public InputAction shoot;
+    public InputAction reload;
 
     public MenuBehaviour mb;
     public Camera cam;
@@ -16,15 +17,19 @@ public class HitScanBehaviour : MonoBehaviour
     public Text clipHUD;
 
     public int fireType;
-    public int burstCount;
-    public float burstRate;
-    public int burst;
+    public float trailSpeed;
     public int maxAmmo;
     public int ammo;
     public float fireRate;
     public float reloadRate;
     public float damage;
     public bool fire;
+    public int burstCount;
+    public float burstRate;
+    public int burst;
+    public int reloadType = 0;
+    public float bulletSpeed;
+    public bool reloading = false;
 
     public Vector3 tracerStart;
 
@@ -37,28 +42,12 @@ public class HitScanBehaviour : MonoBehaviour
         pcs = InputManager.pcs;
 
         shoot = pcs.Gameplay.Shoot;
+        reload = pcs.Gameplay.Reload;
 
         shoot.performed += OnShoot;
         shoot.canceled += OnShoot;
-    }
+        reload.performed += OnReload;
 
-    private void OnEnable()
-    {
-        shoot.Enable();
-        shoot.performed += OnShoot;
-        shoot.canceled += OnShoot;
-    }
-
-    private void OnDisable()
-    {
-        shoot.performed -= OnShoot;
-        shoot.canceled -= OnShoot;
-        shoot.Disable();
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
         mb = GetComponent<MenuBehaviour>();
         cam = GetComponentInChildren<Camera>();
 
@@ -78,6 +67,24 @@ public class HitScanBehaviour : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        shoot.Enable();
+        reload.Enable();
+        reload.performed += OnReload;
+        shoot.performed += OnShoot;
+        shoot.canceled += OnShoot;
+    }
+
+    private void OnDisable()
+    {
+        reload.performed -= OnReload;
+        shoot.performed -= OnShoot;
+        shoot.canceled -= OnShoot;
+        shoot.Disable();
+        reload.Disable();
+    }
+
     public void OnShoot(InputAction.CallbackContext context)
     {
         if (context.performed)
@@ -94,7 +101,7 @@ public class HitScanBehaviour : MonoBehaviour
     {
         while (true)
         {
-            if (ammo > 0 && !mb.paused)
+            if (ammo > 0 && !reloading && !mb.paused)
             {
                 switch (fireType)
                 {
@@ -162,12 +169,27 @@ public class HitScanBehaviour : MonoBehaviour
             if (hit.collider.tag == enemyTeam)
             {
                 hit.collider.GetComponent<CharacterBehaviour>().ReceiveHit(damage);
-                hit.collider.GetComponent<CharacterBehaviour>().player = cam.transform;
+                hit.collider.GetComponent<CharacterBehaviour>().players = cam.transform;
             }
         }
         else
         {
-            StartCoroutine(Tracer(trail, cam.transform.position + cam.transform.forward * 100));
+            StartCoroutine(Tracer(trail, cam.transform.position + cam.transform.forward * 1000));
+        }
+    }
+
+    public void OnReload(InputAction.CallbackContext context)
+    {
+        if (context.performed && ammo < maxAmmo)
+        {
+            if (!reloading)
+            {
+                reloading = true;
+            }
+            else
+            {
+                reloading = false;
+            }
         }
     }
 
@@ -175,14 +197,37 @@ public class HitScanBehaviour : MonoBehaviour
     {
         while (true)
         {
-            if ((Input.GetKeyDown(mb.keys[12]) && ammo < maxAmmo) || ammo == 0f)
+            if ((!mb.paused && ammo < maxAmmo))
             {
-                ammo = 0;
+                switch (reloadType)
+                {
+                    //Clip
+                    case 0:
+                        if (reloading || ammo == 0f)
+                        {
+                            ammo = 0;
 
-                yield return new WaitForSeconds(reloadRate);
+                            yield return new WaitForSeconds(reloadRate);
 
-                ammo = maxAmmo;
-                clipHUD.text = ammo + " / " + maxAmmo;
+                            ammo = maxAmmo;
+                            clipHUD.text = ammo + " / " + maxAmmo;
+                            reloading = false;
+                        }
+
+                        break;
+
+                    //Per Shot
+                    case 1:
+                        while ((reloading && ammo < maxAmmo) || ammo == 0f)
+                        {
+                            ammo++;
+                            clipHUD.text = ammo + " / " + maxAmmo;
+                            yield return new WaitForSeconds(reloadRate);
+                        }
+
+                        reloading = false;
+                        break;
+                }
             }
 
             yield return null;
@@ -193,12 +238,13 @@ public class HitScanBehaviour : MonoBehaviour
     {
         float time = 0;
         Vector3 startPosition = trail.transform.position;
+        float scalar = Vector3.Distance(hit, startPosition) / bulletSpeed;
 
         while (time < 1)
         {
             trail.transform.position = Vector3.Lerp(startPosition, hit, time);
 
-            time += Time.deltaTime / trail.time;
+            time += Time.deltaTime / scalar;
 
             yield return null;
         }

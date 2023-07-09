@@ -10,7 +10,7 @@ public class ActionRebindBehaviour : MonoBehaviour
     private InputActionReference inpRef;
 
     [SerializeField]
-    private bool excludeMouse = true;
+    private bool excludeMouse = false;
     [SerializeField]
     private int selectedBind;
     [SerializeField]
@@ -31,7 +31,6 @@ public class ActionRebindBehaviour : MonoBehaviour
     private Button bindButton;
     [SerializeField]
     private Button resetButton;
-    [SerializeField]
     
 
     private void OnEnable()
@@ -83,7 +82,7 @@ public class ActionRebindBehaviour : MonoBehaviour
 
     private void UpdateUI()
     {
-        if (bindActive.activeInHierarchy)
+        if (bindActive && bindActive.activeInHierarchy)
         {
             bindActive.SetActive(false);
         }

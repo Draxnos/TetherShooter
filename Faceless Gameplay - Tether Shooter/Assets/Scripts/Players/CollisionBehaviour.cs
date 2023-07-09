@@ -16,6 +16,7 @@ public class CollisionBehaviour : MonoBehaviour
     /// </summary>
     public PhysicMaterial normal;
     public PhysicMaterial slip;
+    public PhysicMaterial slide;
     public ContactPoint[] contacts;
     public RaycastHit hit;
     public Vector3 point;
@@ -27,6 +28,7 @@ public class CollisionBehaviour : MonoBehaviour
     /// Carried Values
     /// </summary>
     public float maxSlope = 40;
+    public bool frictionSlide = false;
     public bool grounded = false;
     public bool jumped = false;
     public bool wallHop = false;
@@ -50,11 +52,22 @@ public class CollisionBehaviour : MonoBehaviour
     /// </summary>
     void FixedUpdate()
     {
-        if (grounded == true)
+        if (frictionSlide)
+        {
+            if (coll.material != slide)
+            {
+                coll.material = slip;
+            }
+            else if (rb.velocity.magnitude <= 1 && mb.moveDir != Vector3.zero)
+            {
+                frictionSlide = false;
+            }
+        }
+        else if (grounded == true && coll.material != normal)
         {
             coll.material = normal;
         }
-        else
+        else if (coll.material != slip)
         {
             coll.material = slip;
         }
@@ -201,7 +214,11 @@ public class CollisionBehaviour : MonoBehaviour
                 jb.ungroundDouble = true;
                 grounded = true;
                 jumped = false;
-                coll.material = normal;
+
+                if (!frictionSlide)
+                {
+                    coll.material = normal;
+                }
             }
             //Wall check
             else if (dir2.y < 0f)
